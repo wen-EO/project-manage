@@ -23,13 +23,10 @@
         </div>
         <div class="bg-gray-50 p-4 rounded-lg">
           <h4 class="font-medium mb-2">项目进度</h4>
-          <!-- 时间进度条 -->
-          <el-progress :percentage="timeProgressPercentage" :status="getTimeProgressStatus"></el-progress>
+          <el-progress :percentage="progressPercentage" :status="progressStatus"></el-progress>
           <div class="mt-2 text-sm text-gray-500">
             时间进度: {{ timeProgressPercentage }}%
           </div>
-          <!-- 任务进度条 -->
-          <el-progress :percentage="taskProgressPercentage" :status="getTaskProgressStatus"></el-progress>
           <div class="mt-2 text-sm text-gray-500">
             任务进度: {{ taskProgressPercentage }}%
           </div>
@@ -146,6 +143,7 @@
 
 <script>
 import { mapGetters } from 'vuex';
+import { isWorkingTime } from '../store/index.js';
 
 export default {
   name: 'ProjectDetails',
@@ -172,6 +170,15 @@ export default {
       if (remaining < this.project.totalAmount * 0.2) return 'text-orange-500';
       return 'text-green-500';
     },
+    progressPercentage() {
+      // 综合时间和任务进度
+      return Math.round((this.timeProgressPercentage + this.taskProgressPercentage) / 2);
+    },
+    progressStatus() {
+      if (this.progressPercentage >= 100) return 'success';
+      if (this.progressPercentage >= 75) return 'warning';
+      return 'normal';
+    },
     timeProgressPercentage() {
       const start = new Date(this.project.startDate);
       const end = new Date(this.project.endDate);
@@ -185,11 +192,6 @@ export default {
 
       return Math.round((elapsedTime / totalTime) * 100);
     },
-    getTimeProgressStatus() {
-      if (this.timeProgressPercentage >= 100) return 'success';
-      if (this.timeProgressPercentage >= 75) return 'warning';
-      return 'normal';
-    },
     taskProgressPercentage() {
       if (!this.project.modules || this.project.modules.length === 0) return 0;
 
@@ -201,19 +203,24 @@ export default {
 
       return Math.round((completedPercentage / totalPercentage) * 100);
     },
-    getTaskProgressStatus() {
-      if (this.taskProgressPercentage >= 100) return 'success';
-      if (this.taskProgressPercentage >= 75) return 'warning';
-      return 'normal';
-    },
     personnelCost() {
-      // 简化计算，实际项目中需要根据具体业务逻辑计算
-      return (this.project.personnelCost || 0).toFixed(2);
+      if (!isWorkingTime(new Date())) return '0.00';
+
+      const totalMinutes = 22 * 8 * 60; // 每月法定工作日22天，每天8小时，换算成分钟
+      let totalPersonnelCost = 0;
+      this.projectMembers.forEach(member => {
+        const user = this.users.find(u => u.id === member.id);
+        if (user) {
+          const perMinuteCost = user.baseSalary / totalMinutes;
+          totalPersonnelCost += perMinuteCost;
+        }
+      });
+      return totalPersonnelCost.toFixed(2);
     },
     totalCost() {
       const personnel = parseFloat(this.personnelCost);
       const other = this.project.otherCost || 0;
-      return (personnel + other).toFixed(2);
+      return (this.project.totalAmount - (personnel + other)).toFixed(2);
     },
     profit() {
       const total = this.project.totalAmount || 0;

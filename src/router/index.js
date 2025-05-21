@@ -5,6 +5,7 @@ import CreateProject from '../views/CreateProject.vue';
 import UserRegister from '../views/UserRegister.vue';
 import EditProject from '../views/EditProject.vue';
 import Login from '../components/Login.vue';
+import UserBaseSalary from '../views/UserBaseSalary.vue';
 
 const routes = [
   {
@@ -38,6 +39,12 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: Login
+  },
+  {
+    path: '/user-base-salary',
+    name: 'UserBaseSalary',
+    component: UserBaseSalary,
+    meta: { requiresAuth: true, roles: ['admin'] }
   }
 ];
 
@@ -58,4 +65,3 @@ router.beforeEach((to, from, next) => {
 });
 
 export default router;
-  

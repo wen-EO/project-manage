@@ -1,5 +1,21 @@
 import { createStore } from 'vuex';
 
+// 法定工作日工作时间（早9点到下午6点）
+const WORK_START_TIME = 9 * 60; // 9点换算成分钟
+const WORK_END_TIME = 18 * 60; // 18点换算成分钟
+
+// 判断是否为法定工作日
+function isWeekday(date) {
+  const day = date.getDay();
+  return day >= 1 && day <= 5;
+}
+
+// 判断是否在工作时间内
+function isWorkingTime(date) {
+  const minutes = date.getHours() * 60 + date.getMinutes();
+  return isWeekday(date) && minutes >= WORK_START_TIME && minutes <= WORK_END_TIME;
+}
+
 export default createStore({
   state: {
     user: JSON.parse(localStorage.getItem('user')) || null,
@@ -11,7 +27,8 @@ export default createStore({
         password: 'admin',
         name: '系统管理员',
         role: 'admin',
-        status: 'approved'
+        status: 'approved',
+        baseSalary: 5000 // 添加人员底薪信息
       },
       {
         id: '2',
@@ -19,7 +36,8 @@ export default createStore({
         password: 'manager',
         name: '项目经理',
         role: 'manager',
-        status: 'approved'
+        status: 'approved',
+        baseSalary: 6000
       },
       {
         id: '3',
@@ -27,7 +45,8 @@ export default createStore({
         password: 'member',
         name: '项目成员',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        baseSalary: 4000
       },
       {
         id: '4',
@@ -35,7 +54,8 @@ export default createStore({
         password: '123',
         name: '王昭康',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        baseSalary: 4500
       },
       {
         id: '5',
@@ -43,7 +63,8 @@ export default createStore({
         password: '123',
         name: '程文',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        baseSalary: 4200
       },
       {
         id: '6',
@@ -51,7 +72,8 @@ export default createStore({
         password: '123',
         name: '吕高鹏',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        baseSalary: 4300
       }
     ]
   },
@@ -87,6 +109,13 @@ export default createStore({
       const userIndex = state.users.findIndex(u => u.id === userId);
       if (userIndex !== -1) {
         state.users[userIndex].status = 'approved';
+        localStorage.setItem('users', JSON.stringify(state.users));
+      }
+    },
+    UPDATE_USER_BASE_SALARY(state, { userId, baseSalary }) {
+      const userIndex = state.users.findIndex(u => u.id === userId);
+      if (userIndex !== -1) {
+        state.users[userIndex].baseSalary = baseSalary;
         localStorage.setItem('users', JSON.stringify(state.users));
       }
     }
@@ -175,6 +204,14 @@ export default createStore({
           resolve();
         }, 500);
       });
+    },
+    updateUserBaseSalary({ commit }, { userId, baseSalary }) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          commit('UPDATE_USER_BASE_SALARY', { userId, baseSalary });
+          resolve();
+        }, 500);
+      });
     }
   },
   getters: {
@@ -191,4 +228,3 @@ export default createStore({
     users: (state) => state.users
   }
 });
-  
