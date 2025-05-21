@@ -1,88 +1,125 @@
 <template>
-  <div class="container mx-auto p-4">
-    <el-card class="mb-6">
+  <div class="create-project">
+    <el-card class="box-card">
       <template #header>
-        <h3 class="font-bold">创建项目</h3>
+        <div class="clearfix">
+          <span>创建项目</span>
+        </div>
       </template>
-      <el-form :model="projectForm" :rules="rules" ref="formRef" label-width="120px">
-        <el-form-item label="项目名称" prop="name">
-          <el-input v-model="projectForm.name"></el-input>
+      <el-form :model="project" label-width="120px" class="p-4">
+        <el-form-item label="项目名称">
+          <el-input v-model="project.name"></el-input>
         </el-form-item>
-        <el-form-item label="项目描述" prop="description">
-          <el-input v-model="projectForm.description" type="textarea" :rows="4"></el-input>
+        <el-form-item label="项目编号">
+          <el-input v-model="project.code"></el-input>
         </el-form-item>
-        <el-form-item label="开始日期" prop="startDate">
-          <el-date-picker
-            v-model="projectForm.startDate"
-            type="date"
-            placeholder="选择日期">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="结束日期" prop="endDate">
-          <el-date-picker
-            v-model="projectForm.endDate"
-            type="date"
-            placeholder="选择日期">
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="项目预算" prop="totalAmount">
-          <el-input v-model.number="projectForm.totalAmount" type="number"></el-input>
-        </el-form-item>
-        <el-form-item label="项目经理" prop="managerId">
-          <el-select v-model="projectForm.managerId" placeholder="请选择">
+        <el-form-item label="项目经理">
+          <el-select v-model="project.managerId" placeholder="请选择项目经理">
             <el-option
-              v-for="user in managers"
-              :key="user.id"
-              :label="user.name"
-              :value="user.id">
+                v-for="user in managers"
+                :key="user.id"
+                :label="user.name || user.username"
+                :value="user.id">
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="开始日期">
+          <el-date-picker
+              v-model="project.startDate"
+              type="date"
+              placeholder="选择日期">
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="结束日期">
+          <el-date-picker
+              v-model="project.endDate"
+              type="date"
+              placeholder="选择日期">
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="项目预算">
+          <el-input v-model.number="project.totalAmount" type="number"></el-input>
+        </el-form-item>
+        <el-form-item label="人员成本">
+          <el-input v-model.number="project.personnelCost" type="number"></el-input>
+        </el-form-item>
+        <el-form-item label="其他成本">
+          <el-input v-model.number="project.otherCost" type="number"></el-input>
+        </el-form-item>
+        <el-form-item label="项目描述">
+          <el-input
+              v-model="project.description"
+              type="textarea"
+              :rows="4"
+              placeholder="请输入项目描述">
+          </el-input>
+        </el-form-item>
+        <el-form-item label="项目成员">
+          <el-select
+              v-model="project.members"
+              multiple
+              collapse-tags
+              placeholder="请选择项目成员">
+            <el-option
+                v-for="user in availableMembers"
+                :key="user.id"
+                :label="user.name || user.username"
+                :value="user.id">
             </el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="项目模块">
-          <el-button type="primary" size="small" @click="addModule">添加模块</el-button>
-          <el-table v-if="projectForm.modules && projectForm.modules.length > 0" :data="projectForm.modules" stripe style="width: 100%; margin-top: 20px">
+          <el-table
+              :data="project.modules || []"
+              stripe
+              style="width: 100%">
             <el-table-column prop="name" label="模块名称">
               <template #default="scope">
-                <el-input v-model="scope.row.name"></el-input>
+                <el-input v-model="scope.row.name" size="small"></el-input>
               </template>
             </el-table-column>
-            <el-table-column prop="percentage" label="占比(%)">
+            <el-table-column prop="description" label="描述">
               <template #default="scope">
-                <el-input v-model.number="scope.row.percentage" type="number"></el-input>
+                <el-input v-model="scope.row.description" size="small"></el-input>
+              </template>
+            </el-table-column>
+            <el-table-column prop="percentage" label="权重">
+              <template #default="scope">
+                <el-input-number v-model.number="scope.row.percentage" size="small" :min="1" :max="100"></el-input-number>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态">
+              <template #default="scope">
+                <el-select v-model="scope.row.status" size="small">
+                  <el-option label="未开始" value="未开始"></el-option>
+                  <el-option label="进行中" value="进行中"></el-option>
+                  <el-option label="已完成" value="已完成"></el-option>
+                </el-select>
               </template>
             </el-table-column>
             <el-table-column label="负责人">
               <template #default="scope">
-                <el-select v-model="scope.row.assignee" placeholder="请选择">
+                <el-select v-model="scope.row.leaderId" size="small">
                   <el-option
-                    v-for="user in projectMembers"
-                    :key="user.id"
-                    :label="user.name"
-                    :value="user.id">
+                      v-for="user in project.members ? users.filter(u => project.members.includes(u.id)) : []"
+                      :key="user.id"
+                      :label="user.name || user.username"
+                      :value="user.id">
                   </el-option>
                 </el-select>
               </template>
             </el-table-column>
             <el-table-column label="操作">
               <template #default="scope">
-                <el-button type="text" size="small" @click="removeModule(scope.$index)">移除</el-button>
+                <el-button type="link" size="small" @click="removeModule(scope.$index)">移除</el-button>
               </template>
             </el-table-column>
           </el-table>
-        </el-form-item>
-        <el-form-item label="项目成员">
-          <el-select v-model="selectedMembers" multiple placeholder="请选择" @change="updateProjectMembers">
-            <el-option
-              v-for="user in availableMembers"
-              :key="user.id"
-              :label="user.name"
-              :value="user.id">
-            </el-option>
-          </el-select>
+          <el-button type="primary" size="small" style="margin-top: 10px" @click="addModule">添加模块</el-button>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="submitForm">提交</el-button>
-          <el-button @click="resetForm">重置</el-button>
+          <el-button type="primary" @click="createProject">创建</el-button>
+          <el-button @click="cancel">取消</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -94,117 +131,87 @@ import { mapGetters } from 'vuex';
 
 export default {
   name: 'CreateProject',
-  computed: {
-    ...mapGetters(['user', 'users']),
-    managers() {
-      return this.users.filter(u => u.role === 'manager');
-    },
-    availableMembers() {
-      return this.users.filter(u => u.role === 'member');
-    },
-    projectMembers() {
-      return this.users.filter(u => this.selectedMembers.includes(u.id));
-    }
-  },
   data() {
     return {
-      projectForm: {
+      project: {
         name: '',
-        description: '',
-        startDate: null,
-        endDate: null,
-        totalAmount: 0,
+        code: '',
         managerId: '',
+        startDate: '',
+        endDate: '',
+        totalAmount: 0,
+        personnelCost: 0,
+        otherCost: 0,
+        description: '',
         members: [],
         modules: []
-      },
-      selectedMembers: [],
-      rules: {
-        name: [
-          { required: true, message: '请输入项目名称', trigger: 'blur' }
-        ],
-        startDate: [
-          { required: true, message: '请选择开始日期', trigger: 'change' }
-        ],
-        endDate: [
-          { required: true, message: '请选择结束日期', trigger: 'change' }
-        ],
-        totalAmount: [
-          { required: true, message: '请输入项目预算', trigger: 'blur' },
-          { type: 'number', message: '预算必须为数字值', trigger: 'blur' },
-          { validator: (rule, value, callback) => {
-              if (value <= 0) {
-                callback(new Error('项目预算必须大于0'));
-              } else {
-                callback();
-              }
-            }, trigger: 'blur' }
-        ],
-        managerId: [
-          { required: true, message: '请选择项目经理', trigger: 'change' }
-        ]
       }
     };
   },
+  computed: {
+    ...mapGetters(['user', 'users']),
+    managers() {
+      return this.users.filter(u => u.role === 'manager' || u.role === 'admin');
+    },
+    availableMembers() {
+      return this.users.filter(u => u.role !== 'admin');
+    }
+  },
   methods: {
-    addModule() {
-      this.projectForm.modules.push({
-        id: Date.now().toString(),
-        name: `模块${this.projectForm.modules.length + 1}`,
-        percentage: 100 / (this.projectForm.modules.length + 1),
-        assignee: '',
-        status: '未开始'
+    createProject() {
+      if (!this.project.name) {
+        this.$message.error('项目名称不能为空');
+        return;
+      }
+
+      if (!this.project.managerId) {
+        this.$message.error('请选择项目经理');
+        return;
+      }
+
+      if (!this.project.startDate || !this.project.endDate) {
+        this.$message.error('请选择开始日期和结束日期');
+        return;
+      }
+
+      this.$store.dispatch('createProject', this.project).then(() => {
+        this.$message.success('项目创建成功');
+        this.$router.push({ name: 'Home' });
       });
+    },
+    cancel() {
+      this.$router.back();
+    },
+    addModule() {
+      if (!this.project.modules) {
+        this.project.modules = [];
+      }
+
+      const newModule = {
+        id: Date.now().toString(),
+        name: '新模块',
+        description: '',
+        percentage: 10,
+        status: '未开始',
+        leaderId: this.project.managerId
+      };
+
+      this.project.modules.push(newModule);
     },
     removeModule(index) {
-      this.projectForm.modules.splice(index, 1);
-    },
-    updateProjectMembers() {
-      this.projectForm.members = [...this.selectedMembers];
-    },
-    submitForm() {
-      this.$refs.formRef.validate(valid => {
-        if (valid) {
-          // 验证模块占比总和是否为100%
-          const totalPercentage = this.projectForm.modules.reduce((sum, module) => sum + (module.percentage || 0), 0);
-          if (Math.abs(totalPercentage - 100) > 0.01) {
-            this.$message.error('模块占比总和必须为100%');
-            return;
-          }
-          
-          // 验证开始日期是否小于结束日期
-          if (this.projectForm.startDate && this.projectForm.endDate && new Date(this.projectForm.startDate) >= new Date(this.projectForm.endDate)) {
-            this.$message.error('开始日期必须早于结束日期');
-            return;
-          }
-          
-          // 提交项目数据
-          this.$store.dispatch('createProject', this.projectForm).then(() => {
-            this.$message.success('项目创建成功');
-            this.$router.push({ name: 'Home' });
-          });
-        } else {
-          this.$message.error('请填写完整且正确的项目信息');
-          return false;
-        }
-      });
-    },
-    resetForm() {
-      this.$refs.formRef.resetFields();
-      this.projectForm.modules = [];
-      this.selectedMembers = [];
+      this.project.modules.splice(index, 1);
     }
   },
   created() {
-    // 如果当前用户是管理员，默认选择所有经理
-    if (this.user && this.user.role === 'admin') {
-      this.projectForm.managerId = this.managers.length > 0 ? this.managers[0].id : '';
-    } 
-    // 如果当前用户是项目经理，默认选择自己
-    else if (this.user && this.user.role === 'manager') {
-      this.projectForm.managerId = this.user.id;
+    if (!this.user) {
+      this.$message.error('请先登录');
+      this.$router.push({ name: 'Login' });
+    }
+
+    // 默认设置当前用户为项目经理
+    if (this.user && (this.user.role === 'admin' || this.user.role === 'manager')) {
+      this.project.managerId = this.user.id;
     }
   }
 }
 </script>
-  

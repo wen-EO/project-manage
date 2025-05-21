@@ -1,37 +1,44 @@
 <template>
-  <div class="container mx-auto p-4">
-    <el-card class="mb-6">
+  <div class="home">
+    <el-card class="box-card">
       <template #header>
-        <div class="flex justify-between items-center">
-          <h3 class="font-bold">项目列表</h3>
-          <el-button v-if="user && (user.role === 'admin' || user.role === 'manager')" type="primary" @click="createProject">
+        <div class="clearfix">
+          <span>项目列表</span>
+          <el-button
+              v-if="user && (user.role === 'admin' || user.role === 'manager')"
+              type="primary"
+              size="small"
+              style="float: right"
+              @click="createProject">
             创建项目
           </el-button>
         </div>
       </template>
-      <el-table :data="userProjects" stripe style="width: 100%">
+      <el-table
+          :data="userProjects"
+          stripe
+          style="width: 100%">
         <el-table-column prop="name" label="项目名称"></el-table-column>
-        <el-table-column prop="startDate" label="开始时间"></el-table-column>
-        <el-table-column prop="endDate" label="结束时间"></el-table-column>
-        <el-table-column label="剩余时间">
+        <el-table-column prop="code" label="项目编号"></el-table-column>
+        <el-table-column label="项目经理">
           <template #default="scope">
-            <span :class="getTimeRemainingClass(scope.row)">{{ getTimeRemaining(scope.row) }}</span>
+            {{ getManagerName(scope.row.managerId) || '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="在岗人员">
+        <el-table-column label="状态">
           <template #default="scope">
-            <span>{{ getMembersCount(scope.row) }}</span>
+            <el-tag :type="getStatusType(scope.row.status)">{{ scope.row.status || '未开始' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="剩余利润">
+        <el-table-column label="进度">
           <template #default="scope">
-            <span :class="getProfitClass(scope.row)">{{ getRemainingProfit(scope.row) }}</span>
+            <el-progress :percentage="getProgressPercentage(scope.row)" :status="getProgressStatus(scope.row)" :stroke-width="18"></el-progress>
           </template>
         </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button type="text" size="small" @click="viewProject(scope.row.id)">查看</el-button>
-            <el-button v-if="user && user.role === 'manager' && scope.row.managerId === user.id" type="text" size="small" @click="editProject(scope.row.id)">编辑</el-button>
+            <el-button type="link" size="small" @click="viewProject(scope.row.id)">查看</el-button>
+            <el-button v-if="user && user.role === 'manager' && scope.row.managerId === user.id" type="link" size="small" @click="editProject(scope.row.id)">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -45,56 +52,50 @@ import { mapGetters } from 'vuex';
 export default {
   name: 'Home',
   computed: {
-    ...mapGetters(['user', 'userProjects']),
+    ...mapGetters(['user', 'userProjects', 'users']),
   },
   methods: {
-    viewProject(projectId) {
-      this.$router.push({ name: 'ProjectDetails', params: { id: projectId } });
+    getManagerName(managerId) {
+      const manager = this.users.find(u => u.id === managerId);
+      return manager ? manager.name : '未知';
+    },
+    getStatusType(status) {
+      switch (status) {
+        case '已完成':
+          return 'success';
+        case '进行中':
+          return 'primary';
+        case '未开始':
+          return 'info';
+        default:
+          return 'info';
+      }
+    },
+    getProgressPercentage(project) {
+      if (!project.modules || project.modules.length === 0) return 0;
+
+      const completedModules = project.modules.filter(m => m.status === '已完成');
+      if (completedModules.length === 0) return 0;
+
+      const totalPercentage = project.modules.reduce((sum, m) => sum + (m.percentage || 0), 0);
+      const completedPercentage = completedModules.reduce((sum, m) => sum + (m.percentage || 0), 0);
+
+      return Math.round((completedPercentage / totalPercentage) * 100);
+    },
+    getProgressStatus(project) {
+      const percentage = this.getProgressPercentage(project);
+      if (percentage >= 100) return 'success';
+      if (percentage >= 75) return 'warning';
+      return 'normal';
+    },
+    viewProject(id) {
+      this.$router.push({ name: 'ProjectDetails', params: { id } });
+    },
+    editProject(id) {
+      this.$router.push({ name: 'EditProject', params: { id } });
     },
     createProject() {
       this.$router.push({ name: 'CreateProject' });
-    },
-    editProject(projectId) {
-      this.$router.push({ name: 'EditProject', params: { id: projectId } });
-    },
-    getTimeRemaining(project) {
-      const start = new Date(project.startDate);
-      const end = new Date(project.endDate);
-      const now = new Date();
-      
-      if (now > end) return '已结束';
-      
-      const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-      const remainingDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-      
-      return `${remainingDays}天 (${Math.round((remainingDays / totalDays) * 100)}%)`;
-    },
-    getTimeRemainingClass(project) {
-      const now = new Date();
-      const end = new Date(project.endDate);
-      const remainingDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
-      
-      if (remainingDays < 0) return 'text-red-500';
-      if (remainingDays < 7) return 'text-orange-500';
-      return 'text-green-500';
-    },
-    getMembersCount(project) {
-      return project.members ? project.members.length : 0;
-    },
-    getRemainingProfit(project) {
-      // 这里简化计算，实际项目中需要根据具体业务逻辑计算
-      const totalAmount = project.totalAmount || 0;
-      const usedAmount = project.usedAmount || 0;
-      return `¥${(totalAmount - usedAmount).toFixed(2)}`;
-    },
-    getProfitClass(project) {
-      const totalAmount = project.totalAmount || 0;
-      const usedAmount = project.usedAmount || 0;
-      const remaining = totalAmount - usedAmount;
-      
-      if (remaining < 0) return 'text-red-500';
-      if (remaining < totalAmount * 0.2) return 'text-orange-500';
-      return 'text-green-500';
     }
   },
   created() {
@@ -102,4 +103,3 @@ export default {
   }
 }
 </script>
-  
