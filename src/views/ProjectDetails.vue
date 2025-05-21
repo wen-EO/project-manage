@@ -23,10 +23,13 @@
         </div>
         <div class="bg-gray-50 p-4 rounded-lg">
           <h4 class="font-medium mb-2">项目进度</h4>
-          <el-progress :percentage="progressPercentage" :status="progressStatus"></el-progress>
+          <!-- 时间进度条 -->
+          <el-progress :percentage="timeProgressPercentage" :status="getTimeProgressStatus"></el-progress>
           <div class="mt-2 text-sm text-gray-500">
             时间进度: {{ timeProgressPercentage }}%
           </div>
+          <!-- 任务进度条 -->
+          <el-progress :percentage="taskProgressPercentage" :status="getTaskProgressStatus"></el-progress>
           <div class="mt-2 text-sm text-gray-500">
             任务进度: {{ taskProgressPercentage }}%
           </div>
@@ -63,11 +66,11 @@
         </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button 
-              v-if="user && user.role === 'manager' && scope.row.status !== '已完成'" 
-              type="text" 
-              size="small" 
-              @click="markModuleAsComplete(project.id, scope.row.id)">
+            <el-button
+                v-if="user && user.role === 'manager' && scope.row.status !== '已完成'"
+                type="text"
+                size="small"
+                @click="markModuleAsComplete(project.id, scope.row.id)">
               标记为完成
             </el-button>
           </template>
@@ -99,11 +102,11 @@
         </el-table-column>
         <el-table-column label="操作">
           <template #default="scope">
-            <el-button 
-              v-if="user && user.role === 'manager' && scope.row.id !== user.id" 
-              type="text" 
-              size="small" 
-              @click="removeMember(project.id, scope.row.id)">
+            <el-button
+                v-if="user && user.role === 'manager' && scope.row.id !== user.id"
+                type="text"
+                size="small"
+                @click="removeMember(project.id, scope.row.id)">
               移除
             </el-button>
           </template>
@@ -118,16 +121,16 @@
       <el-form :model="leaveForm" label-width="120px">
         <el-form-item label="开始日期">
           <el-date-picker
-            v-model="leaveForm.startDate"
-            type="date"
-            placeholder="选择日期">
+              v-model="leaveForm.startDate"
+              type="date"
+              placeholder="选择日期">
           </el-date-picker>
         </el-form-item>
         <el-form-item label="结束日期">
           <el-date-picker
-            v-model="leaveForm.endDate"
-            type="date"
-            placeholder="选择日期">
+              v-model="leaveForm.endDate"
+              type="date"
+              placeholder="选择日期">
           </el-date-picker>
         </el-form-item>
         <el-form-item label="请假原因">
@@ -169,38 +172,39 @@ export default {
       if (remaining < this.project.totalAmount * 0.2) return 'text-orange-500';
       return 'text-green-500';
     },
-    progressPercentage() {
-      // 综合时间和任务进度
-      return Math.round((this.timeProgressPercentage + this.taskProgressPercentage) / 2);
-    },
-    progressStatus() {
-      if (this.progressPercentage >= 100) return 'success';
-      if (this.progressPercentage >= 75) return 'warning';
-      return 'normal';
-    },
     timeProgressPercentage() {
       const start = new Date(this.project.startDate);
       const end = new Date(this.project.endDate);
       const now = new Date();
-      
+
       if (now >= end) return 100;
       if (now <= start) return 0;
-      
+
       const totalTime = end - start;
       const elapsedTime = now - start;
-      
+
       return Math.round((elapsedTime / totalTime) * 100);
+    },
+    getTimeProgressStatus() {
+      if (this.timeProgressPercentage >= 100) return 'success';
+      if (this.timeProgressPercentage >= 75) return 'warning';
+      return 'normal';
     },
     taskProgressPercentage() {
       if (!this.project.modules || this.project.modules.length === 0) return 0;
-      
+
       const completedModules = this.project.modules.filter(m => m.status === '已完成');
       if (completedModules.length === 0) return 0;
-      
+
       const totalPercentage = this.project.modules.reduce((sum, m) => sum + (m.percentage || 0), 0);
       const completedPercentage = completedModules.reduce((sum, m) => sum + (m.percentage || 0), 0);
-      
+
       return Math.round((completedPercentage / totalPercentage) * 100);
+    },
+    getTaskProgressStatus() {
+      if (this.taskProgressPercentage >= 100) return 'success';
+      if (this.taskProgressPercentage >= 75) return 'warning';
+      return 'normal';
     },
     personnelCost() {
       // 简化计算，实际项目中需要根据具体业务逻辑计算
@@ -230,7 +234,7 @@ export default {
       const now = new Date();
       const start = new Date(this.project.startDate);
       const end = new Date(this.project.endDate);
-      
+
       if (now < start) return '未开始';
       if (now > end) return '已结束';
       return '进行中';
@@ -239,7 +243,7 @@ export default {
       const now = new Date();
       const start = new Date(this.project.startDate);
       const end = new Date(this.project.endDate);
-      
+
       if (now < start) return 'info';
       if (now > end) return 'success';
       return 'primary';
@@ -282,7 +286,7 @@ export default {
     markModuleAsComplete(projectId, moduleId) {
       const project = { ...this.project };
       const moduleIndex = project.modules.findIndex(m => m.id === moduleId);
-      
+
       if (moduleIndex !== -1) {
         project.modules[moduleIndex].status = '已完成';
         this.$store.dispatch('updateProject', project).then(() => {
@@ -298,7 +302,7 @@ export default {
       }).then(() => {
         const project = { ...this.project };
         project.members = project.members.filter(id => id !== memberId);
-        
+
         this.$store.dispatch('updateProject', project).then(() => {
           this.$message.success('成员已移除');
         });
@@ -311,7 +315,7 @@ export default {
         this.$message.error('请填写完整的请假信息');
         return;
       }
-      
+
       // 实际项目中，这里应该发送请假申请到后端
       this.$message.success('请假申请已提交，等待审批');
       this.leaveForm = {
@@ -328,4 +332,3 @@ export default {
   }
 }
 </script>
-  
