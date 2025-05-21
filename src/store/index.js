@@ -11,7 +11,8 @@ export default createStore({
         password: 'admin',
         name: '系统管理员',
         role: 'admin',
-        status: 'approved'
+        status: 'approved',
+        monthlySalary: 10000 // 新增月薪属性
       },
       {
         id: '2',
@@ -19,7 +20,8 @@ export default createStore({
         password: 'manager',
         name: '项目经理',
         role: 'manager',
-        status: 'approved'
+        status: 'approved',
+        monthlySalary: 8000
       },
       {
         id: '3',
@@ -27,7 +29,8 @@ export default createStore({
         password: 'member',
         name: '项目成员',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        monthlySalary: 6000
       },
       {
         id: '4',
@@ -35,7 +38,8 @@ export default createStore({
         password: '123',
         name: '王昭康',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        monthlySalary: 6500
       },
       {
         id: '5',
@@ -43,7 +47,8 @@ export default createStore({
         password: '123',
         name: '程文',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        monthlySalary: 6200
       },
       {
         id: '6',
@@ -51,7 +56,8 @@ export default createStore({
         password: '123',
         name: '吕高鹏',
         role: 'member',
-        status: 'approved'
+        status: 'approved',
+        monthlySalary: 6300
       }
     ]
   },
